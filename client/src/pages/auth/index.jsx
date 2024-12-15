@@ -1,3 +1,4 @@
+
 import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
@@ -12,6 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { signInFormControls, signUpFormControls } from "@/config";
 import { AuthContext } from "@/context/auth-context";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
@@ -28,6 +30,25 @@ function AuthPage() {
     setActiveTab(value);
   }
 
+  function handleRoleChange(value) {
+    setSignUpFormData(prevData => ({
+      ...prevData,
+      userRole: value
+    }));
+  }
+
+  // Modified handleRegisterUser to switch tabs after successful registration
+  async function handleSignUp(event) {
+    try {
+      await handleRegisterUser(event);
+      // Switch to signin tab after successful registration
+      setActiveTab("signin");
+    } catch (error) {
+      // Optionally handle registration error
+      console.error("Registration failed", error);
+    }
+  }
+
   function checkIfSignInFormIsValid() {
     return (
       signInFormData &&
@@ -41,13 +62,13 @@ function AuthPage() {
       signUpFormData &&
       signUpFormData.userName !== "" &&
       signUpFormData.userEmail !== "" &&
-      signUpFormData.password !== ""
+      signUpFormData.password !== "" &&
+      signUpFormData.userRole
     );
   }
 
   return (
     <div className="relative flex flex-col min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 overflow-hidden">
-      {/* Floating Bubbles */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Each bubble has a unique color and size */}
         <div className="absolute top-10 left-10 w-64 h-64 bg-blue-400 rounded-full opacity-20 animate-float-1"></div>
@@ -72,7 +93,6 @@ function AuthPage() {
         <div className="absolute bottom-2/3 left-2/3 w-44 h-44 bg-purple-100 rounded-full opacity-20 animate-float-20"></div>
       </div>
 
-      {/* Rest of the component remains the same */}
       <header className="relative z-10 px-4 lg:px-6 h-14 flex items-center border-b bg-white/60 backdrop-blur-sm shadow-sm">
         <Link to={"/"} className="flex items-center justify-center">
           <GraduationCap className="h-8 w-8 mr-4" />
@@ -122,13 +142,31 @@ function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Role
+                  </label>
+                  <Select 
+                    value={signUpFormData?.userRole || ""} 
+                    onValueChange={handleRoleChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="instructor">Instructor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <CommonForm
                   formControls={signUpFormControls}
                   buttonText={"Sign Up"}
                   formData={signUpFormData}
                   setFormData={setSignUpFormData}
                   isButtonDisabled={!checkIfSignUpFormIsValid()}
-                  handleSubmit={handleRegisterUser}
+                  handleSubmit={handleSignUp}
                 />
               </CardContent>
             </Card>
@@ -136,7 +174,6 @@ function AuthPage() {
         </Tabs>
       </div>
 
-      {/* Complete floating animations */}
       <style jsx="true">{`
         @keyframes float-1 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
