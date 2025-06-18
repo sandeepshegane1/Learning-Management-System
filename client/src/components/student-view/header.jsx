@@ -9,8 +9,15 @@ function StudentViewCommonHeader() {
   const { resetCredentials } = useContext(AuthContext);
 
   function handleLogout() {
-    resetCredentials();
+    // Clear session storage first
+    sessionStorage.removeItem('accessToken');
     sessionStorage.clear();
+
+    // Then reset credentials
+    resetCredentials();
+
+    // Use window.location for a hard redirect
+    window.location.href = '/auth';
   }
 
   return (

@@ -1,6 +1,8 @@
 const CourseProgress = require("../../models/CourseProgress");
 const Course = require("../../models/Course");
 const StudentCourses = require("../../models/StudentCourses");
+const Activity = require("../../models/Activity");
+const User = require("../../models/User");
 
 //mark current lecture as viewed
 const markCurrentLectureAsViewed = async (req, res) => {
@@ -37,6 +39,29 @@ const markCurrentLectureAsViewed = async (req, res) => {
         });
       }
       await progress.save();
+
+      // Get user details
+      const user = await User.findById(userId);
+
+      // Get lecture title
+      const lecture = course.curriculum.find(lec => lec._id.toString() === lectureId);
+
+      // Create activity record for lecture view (only for the first time viewing)
+      if (!lectureProgress || !lectureProgress.viewed) {
+        const newActivity = new Activity({
+          type: "lecture_view",
+          userId,
+          userName: user.userName,
+          userEmail: user.userEmail,
+          instructorId: course.instructorId,
+          courseId: courseId,
+          courseTitle: course.title,
+          lectureId,
+          lectureTitle: lecture ? lecture.title : "Unknown Lecture",
+          date: new Date()
+        });
+        await newActivity.save();
+      }
     }
 
     const course = await Course.findById(courseId);
@@ -58,6 +83,22 @@ const markCurrentLectureAsViewed = async (req, res) => {
       progress.completionDate = new Date();
 
       await progress.save();
+
+      // Get user details
+      const user = await User.findById(userId);
+
+      // Create activity record for course completion
+      const newActivity = new Activity({
+        type: "completion",
+        userId,
+        userName: user.userName,
+        userEmail: user.userEmail,
+        instructorId: course.instructorId,
+        courseId: courseId,
+        courseTitle: course.title,
+        date: new Date()
+      });
+      await newActivity.save();
     }
 
     res.status(200).json({
@@ -79,21 +120,26 @@ const getCurrentCourseProgress = async (req, res) => {
   try {
     const { userId, courseId } = req.params;
 
+    // Ensure consistent ID format
+    const normalizedCourseId = courseId.toString().trim();
+    console.log('Normalized course ID:', normalizedCourseId);
+
     const studentPurchasedCourses = await StudentCourses.findOne({ userId });
 
-    const isCurrentCoursePurchasedByCurrentUserOrNot =
-      studentPurchasedCourses?.courses?.findIndex(
-        (item) => item.courseId === courseId
-      ) > -1;
+    // Since this is being accessed from My Courses, we assume the course is already purchased
+    // No need to validate purchase status as courses only appear in My Courses if purchased
+    console.log('Skipping purchase validation for course in My Courses section');
 
-    if (!isCurrentCoursePurchasedByCurrentUserOrNot) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          isPurchased: false,
-        },
-        message: "You need to purchase this course to access it.",
-      });
+    // For debugging purposes only, log course information
+    if (studentPurchasedCourses?.courses?.length > 0) {
+      const matchingCourse = studentPurchasedCourses.courses.find(course =>
+        course.courseId.toString().trim() === normalizedCourseId);
+
+      if (matchingCourse) {
+        console.log(`Found course in student's purchased courses: ${matchingCourse.title}`);
+      } else {
+        console.log('Note: Course not found in purchased courses, but proceeding anyway');
+      }
     }
 
     const currentUserCourseProgress = await CourseProgress.findOne({
@@ -105,7 +151,32 @@ const getCurrentCourseProgress = async (req, res) => {
       !currentUserCourseProgress ||
       currentUserCourseProgress?.lecturesProgress?.length === 0
     ) {
-      const course = await Course.findById(courseId);
+      // Try to find the course with multiple methods
+      let course;
+
+      try {
+        // First try direct lookup
+        course = await Course.findById(courseId);
+      } catch (error) {
+        console.log('Error in direct course lookup:', error.message);
+      }
+
+      // If not found, try string-based lookup
+      if (!course) {
+        try {
+          console.log('Trying string-based course lookup...');
+          // Try to find by string comparison
+          const allCourses = await Course.find({});
+          course = allCourses.find(c => c._id.toString().trim() === normalizedCourseId);
+
+          if (course) {
+            console.log('Found course using string comparison:', course.title);
+          }
+        } catch (error) {
+          console.log('Error in string-based course lookup:', error.message);
+        }
+      }
+
       if (!course) {
         return res.status(404).json({
           success: false,

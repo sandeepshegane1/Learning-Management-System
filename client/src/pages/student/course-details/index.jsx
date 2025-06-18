@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogClose,
@@ -17,9 +20,24 @@ import {
   createPaymentService,
   fetchStudentViewCourseDetailsService,
 } from "@/services";
-import { CheckCircle, Globe, Lock, PlayCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle, Globe, Lock, PlayCircle, Clock, BookOpen, Users, Star, Award, ChevronRight, Calendar, BarChart } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+
+// Utility function to format seconds into hours, minutes and seconds
+function formatDuration(seconds) {
+  if (!seconds || isNaN(seconds)) return "0 min";
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours} hr ${minutes > 0 ? `${minutes} min` : ''}`;
+  } else {
+    return `${minutes} min`;
+  }
+}
 
 function StudentViewCourseDetailsPage() {
   const {
@@ -37,6 +55,9 @@ function StudentViewCourseDetailsPage() {
     useState(null);
   const [showFreePreviewDialog, setShowFreePreviewDialog] = useState(false);
   const [approvalUrl, setApprovalUrl] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("paypal");
+  const [razorpayData, setRazorpayData] = useState(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
@@ -74,13 +95,69 @@ function StudentViewCourseDetailsPage() {
     setDisplayCurrentVideoFreePreview(getCurrentVideoInfo?.videoUrl);
   }
 
+  function handleShowPaymentOptions() {
+    console.log('Buy Now/Enroll button clicked');
+    // First check if user is authenticated
+    if (!auth?.authenticate) {
+      alert('Please login to access this course');
+      navigate('/auth');
+      return;
+    }
+
+    // Check if course is free
+    let coursePricing = studentViewCourseDetails?.pricing;
+    if (typeof coursePricing === 'string') {
+      coursePricing = parseFloat(coursePricing);
+    }
+
+    const isFree = isNaN(coursePricing) || coursePricing <= 0;
+
+    if (isFree) {
+      // For free courses, directly call handleCreatePayment
+      handleCreatePayment();
+    } else {
+      // For paid courses, show payment options dialog
+      setTimeout(() => {
+        setShowPaymentDialog(true);
+        console.log('Payment dialog should be visible now');
+      }, 100);
+    }
+  }
+
   async function handleCreatePayment() {
+    // Check if user is authenticated
+    if (!auth?.authenticate || !auth?.user) {
+      console.error('User is not authenticated');
+      alert('Please login to purchase this course');
+      navigate('/auth');
+      return;
+    }
+
+    console.log('Creating payment with method:', paymentMethod);
+    console.log('Course details:', studentViewCourseDetails);
+    console.log('Course pricing:', studentViewCourseDetails?.pricing, 'Type:', typeof studentViewCourseDetails?.pricing);
+
+    // Ensure course pricing is a valid number
+    let coursePricing = studentViewCourseDetails?.pricing;
+    let isFree = false;
+
+    if (typeof coursePricing === 'string') {
+      coursePricing = parseFloat(coursePricing);
+    }
+
+    // Check if the course is free
+    if (isNaN(coursePricing) || coursePricing <= 0) {
+      console.log('Course is free');
+      coursePricing = 0;
+      isFree = true;
+    }
+
     const paymentPayload = {
       userId: auth?.user?._id,
       userName: auth?.user?.userName,
       userEmail: auth?.user?.userEmail,
       orderStatus: "pending",
-      paymentMethod: "paypal",
+      paymentMethod: paymentMethod,
       paymentStatus: "initiated",
       orderDate: new Date(),
       paymentId: "",
@@ -90,18 +167,106 @@ function StudentViewCourseDetailsPage() {
       courseImage: studentViewCourseDetails?.image,
       courseTitle: studentViewCourseDetails?.title,
       courseId: studentViewCourseDetails?._id,
-      coursePricing: studentViewCourseDetails?.pricing,
+      coursePricing: coursePricing, // Use the validated pricing
     };
 
     console.log(paymentPayload, "paymentPayload");
+
+    // Handle free courses differently
+    if (isFree) {
+      console.log('Processing free course enrollment');
+      // Set payment method to 'free'
+      paymentPayload.paymentMethod = 'free';
+      paymentPayload.paymentStatus = 'paid';
+      paymentPayload.orderStatus = 'confirmed';
+    }
+
     const response = await createPaymentService(paymentPayload);
 
     if (response.success) {
+      // For free courses, redirect directly to courses page
+      if (isFree) {
+        console.log('Free course enrollment successful');
+        window.location.href = '/student-courses';
+        return;
+      }
+
       sessionStorage.setItem(
         "currentOrderId",
         JSON.stringify(response?.data?.orderId)
       );
-      setApprovalUrl(response?.data?.approveUrl);
+
+      if (paymentMethod === "paypal") {
+        setApprovalUrl(response?.data?.approveUrl);
+      } else if (paymentMethod === "razorpay" || paymentMethod === "upi") {
+        // Handle Razorpay payment
+        const options = {
+          key: response.data.key,
+          amount: response.data.amount,
+          currency: response.data.currency,
+          name: "LMS Course",
+          description: response.data.courseTitle,
+          order_id: response.data.razorpayOrderId,
+          prefill: {
+            name: response.data.userName,
+            email: response.data.userEmail,
+          },
+          handler: function(razorpayResponse) {
+            // Handle successful payment
+            console.log('Razorpay payment successful:', razorpayResponse);
+            const orderId = JSON.parse(sessionStorage.getItem("currentOrderId"));
+            console.log('Order ID from session storage:', orderId);
+
+            // Verify the payment on the server using the verifyRazorpayPaymentService
+            import("@/services").then(({ verifyRazorpayPaymentService }) => {
+              verifyRazorpayPaymentService({
+                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                razorpay_order_id: razorpayResponse.razorpay_order_id,
+                razorpay_signature: razorpayResponse.razorpay_signature,
+                orderId: orderId
+              })
+              .then(data => {
+                console.log('Payment verification response:', data);
+                if (data.success) {
+                  // Payment verified successfully
+                  sessionStorage.removeItem("currentOrderId");
+                  window.location.href = '/student-courses';
+                } else {
+                  // Payment verification failed
+                  alert('Payment verification failed. Please try again.');
+                }
+              })
+              .catch(error => {
+                console.error('Payment verification error:', error);
+                alert('An error occurred during payment verification. Please contact support.');
+              });
+            });
+          },
+          theme: {
+            color: "#3399cc",
+          },
+        };
+
+        // Load Razorpay script dynamically if not already loaded
+        if (window.Razorpay) {
+          console.log('Razorpay already loaded, opening checkout');
+          const razorpayInstance = new window.Razorpay(options);
+          razorpayInstance.open();
+        } else {
+          console.log('Loading Razorpay script');
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.async = true;
+          script.onload = () => {
+            console.log('Razorpay script loaded');
+            const razorpayInstance = new window.Razorpay(options);
+            razorpayInstance.open();
+          };
+          document.body.appendChild(script);
+        }
+      }
+
+      setShowPaymentDialog(false);
     }
   }
 
@@ -118,17 +283,19 @@ function StudentViewCourseDetailsPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!location.pathname.includes("course/details"))
-      setStudentViewCourseDetails(null),
-        setCurrentCourseDetailsId(null),
-        setCoursePurchaseId(null);
+    if (!location.pathname.includes("course/details")) {
+      setStudentViewCourseDetails(null);
+      setCurrentCourseDetailsId(null);
+    }
   }, [location.pathname]);
 
   if (loadingState) return <Skeleton />;
 
-  if (approvalUrl !== "") {
-    window.location.href = approvalUrl;
-  }
+  useEffect(() => {
+    if (approvalUrl !== "") {
+      window.location.href = approvalUrl;
+    }
+  }, [approvalUrl]);
 
   const getIndexOfFreePreviewUrl =
     studentViewCourseDetails !== null
@@ -156,6 +323,10 @@ function StudentViewCourseDetailsPage() {
             {studentViewCourseDetails?.students.length <= 1
               ? "Student"
               : "Students"}
+          </span>
+          <span className="flex items-center">
+            <Clock className="mr-1 h-4 w-4" />
+            {formatDuration(studentViewCourseDetails?.totalDuration)}
           </span>
         </div>
       </div>
@@ -192,23 +363,30 @@ function StudentViewCourseDetailsPage() {
               {studentViewCourseDetails?.curriculum?.map(
                 (curriculumItem, index) => (
                   <li
+                    key={index}
                     className={`${
                       curriculumItem?.freePreview
                         ? "cursor-pointer"
                         : "cursor-not-allowed"
-                    } flex items-center mb-4`}
+                    } flex items-center justify-between mb-4 p-2 hover:bg-gray-100/5 rounded-md`}
                     onClick={
                       curriculumItem?.freePreview
                         ? () => handleSetFreePreview(curriculumItem)
                         : null
                     }
                   >
-                    {curriculumItem?.freePreview ? (
-                      <PlayCircle className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Lock className="mr-2 h-4 w-4" />
-                    )}
-                    <span>{curriculumItem?.title}</span>
+                    <div className="flex items-center">
+                      {curriculumItem?.freePreview ? (
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Lock className="mr-2 h-4 w-4" />
+                      )}
+                      <span>{curriculumItem?.title}</span>
+                    </div>
+                    <div className="flex items-center text-gray-400 text-sm">
+                      <Clock className="mr-1 h-3 w-3" />
+                      <span>{formatDuration(curriculumItem?.duration || 0)}</span>
+                    </div>
                   </li>
                 )
               )}
@@ -233,21 +411,33 @@ function StudentViewCourseDetailsPage() {
               </div>
               <div className="mb-4">
                 <span className="text-3xl font-bold">
-                  ${studentViewCourseDetails?.pricing}
+                  {parseFloat(studentViewCourseDetails?.pricing) <= 0 ?
+                    "Free" :
+                    `₹${studentViewCourseDetails?.pricing}`
+                  }
                 </span>
               </div>
-              <Button onClick={handleCreatePayment} className="w-full">
-                Buy Now
+              <Button
+                onClick={handleShowPaymentOptions}
+                className="w-full"
+              >
+                {parseFloat(studentViewCourseDetails?.pricing) <= 0 ?
+                  "Enroll for Free" :
+                  "Buy Now"
+                }
               </Button>
             </CardContent>
           </Card>
         </aside>
       </div>
+      {/* Free Preview Dialog */}
       <Dialog
         open={showFreePreviewDialog}
-        onOpenChange={() => {
-          setShowFreePreviewDialog(false);
-          setDisplayCurrentVideoFreePreview(null);
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowFreePreviewDialog(false);
+            setDisplayCurrentVideoFreePreview(null);
+          }
         }}
       >
         <DialogContent className="w-[800px]">
@@ -279,6 +469,55 @@ function StudentViewCourseDetailsPage() {
                 Close
               </Button>
             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog
+        open={showPaymentDialog}
+        onOpenChange={(open) => {
+          console.log('Dialog open state changed to:', open);
+          setShowPaymentDialog(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Payment Method</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={setPaymentMethod}
+              className="flex flex-col space-y-3"
+            >
+              <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50">
+                <RadioGroupItem value="paypal" id="paypal" />
+                <Label htmlFor="paypal" className="flex items-center cursor-pointer">
+                  <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" alt="PayPal" className="h-6 mr-2" />
+                  PayPal
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50">
+                <RadioGroupItem value="razorpay" id="razorpay" />
+                <Label htmlFor="razorpay" className="flex items-center cursor-pointer">
+                  <img src="https://razorpay.com/assets/razorpay-logo.svg" alt="Razorpay" className="h-6 mr-2" />
+                  Credit/Debit Card
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50">
+                <RadioGroupItem value="upi" id="upi" />
+                <Label htmlFor="upi" className="flex items-center cursor-pointer">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/1200px-UPI-Logo-vector.svg.png" alt="UPI" className="h-6 mr-2" />
+                  UPI
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreatePayment} className="w-full">
+              Proceed to Payment
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

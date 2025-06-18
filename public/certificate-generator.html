@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillHub Certificate Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .test-button {
+      background-color: #2196F3;
+      display: block;
+      width: 250px;
+      margin: 30px auto 0;
+      text-align: center;
+    }
+    .test-button:hover {
+      background-color: #0b7dda;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo h2 {
+      color: #333;
+      font-size: 28px;
+      margin: 0;
+    }
+    .logo span {
+      color: #4CAF50;
+    }
+    .preview {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .preview img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <h2><span>Skill</span>Hub</h2>
+  </div>
+
+  <h1>Certificate Generator</h1>
+
+  <div class="container">
+    <h2>Generate Custom Certificate</h2>
+    <form id="certificateForm">
+      <div class="form-group">
+        <label for="userId">User ID:</label>
+        <input type="text" id="userId" name="userId" placeholder="Enter user ID" required>
+        <small style="display: block; margin-top: 5px; color: #666;">Enter the MongoDB ID of the user who completed the course</small>
+      </div>
+
+      <div class="form-group">
+        <label for="courseId">Course ID:</label>
+        <input type="text" id="courseId" name="courseId" placeholder="Enter course ID" required>
+        <small style="display: block; margin-top: 5px; color: #666;">Enter the MongoDB ID of the completed course</small>
+      </div>
+
+      <button type="submit">Generate Certificate</button>
+    </form>
+  </div>
+
+  <a href="/student/certificate/test">
+    <button class="test-button">Generate Sample Certificate</button>
+  </a>
+
+  <div class="container" style="margin-top: 30px;">
+    <h3>How to Find User and Course IDs</h3>
+    <p>You need to provide the MongoDB IDs for both the user and the course to generate a certificate.</p>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px;">
+      <h4>Finding User ID:</h4>
+      <ol>
+        <li>Go to your MongoDB database or admin panel</li>
+        <li>Look up the user in the Users collection</li>
+        <li>Copy the <code>_id</code> field value</li>
+      </ol>
+    </div>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px;">
+      <h4>Finding Course ID:</h4>
+      <ol>
+        <li>Go to your MongoDB database or admin panel</li>
+        <li>Look up the course in the Courses collection</li>
+        <li>Copy the <code>_id</code> field value</li>
+      </ol>
+    </div>
+
+    <p style="margin-top: 15px;"><strong>Note:</strong> The certificate will only be generated if the user has purchased the course.</p>
+  </div>
+
+  <script>
+    document.getElementById('certificateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const formData = {
+        userId: document.getElementById('userId').value,
+        courseId: document.getElementById('courseId').value
+      };
+
+      try {
+        const response = await fetch('/student/certificate/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          // Convert the response to a blob
+          const blob = await response.blob();
+
+          // Create a URL for the blob
+          const url = window.URL.createObjectURL(blob);
+
+          // Create a link to download the PDF
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'skillhub-certificate.pdf';
+          document.body.appendChild(a);
+          a.click();
+
+          // Clean up
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          alert('Failed to generate certificate');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while generating the certificate');
+      }
+    });
+  </script>
+</body>
+</html>

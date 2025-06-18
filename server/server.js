@@ -6,10 +6,15 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth-routes/index");
 const mediaRoutes = require("./routes/instructor-routes/media-routes");
 const instructorCourseRoutes = require("./routes/instructor-routes/course-routes");
+const instructorStudentProgressRoutes = require("./routes/instructor-routes/student-progress-routes");
+const instructorActivityRoutes = require("./routes/instructor-routes/activity-routes");
 const studentViewCourseRoutes = require("./routes/student-routes/course-routes");
 const studentViewOrderRoutes = require("./routes/student-routes/order-routes");
 const studentCoursesRoutes = require("./routes/student-routes/student-courses-routes");
 const studentCourseProgressRoutes = require("./routes/student-routes/course-progress-routes");
+const studentRatingRoutes = require("./routes/student-routes/rating-routes");
+const studentCartRoutes = require("./routes/student-routes/cart-routes");
+const studentCertificateRoutes = require("./routes/student-routes/certificate-routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +29,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.static('public'));
 console.log("MongoDB URL:", MONGO_URI); // Log the correct variable
 
 mongoose
@@ -35,10 +41,15 @@ mongoose
 app.use("/auth", authRoutes);
 app.use("/media", mediaRoutes);
 app.use("/instructor/course", instructorCourseRoutes);
+app.use("/instructor/student-progress", instructorStudentProgressRoutes);
+app.use("/instructor/activity", instructorActivityRoutes);
 app.use("/student/course", studentViewCourseRoutes);
 app.use("/student/order", studentViewOrderRoutes);
 app.use("/student/courses-bought", studentCoursesRoutes);
 app.use("/student/course-progress", studentCourseProgressRoutes);
+app.use("/student/rating", studentRatingRoutes);
+app.use("/student/cart", studentCartRoutes);
+app.use("/student/certificate", studentCertificateRoutes);
 
 app.use((err, req, res, next) => {
   console.log(err.stack);

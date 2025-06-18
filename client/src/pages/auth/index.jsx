@@ -3,12 +3,14 @@ import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import CommonForm from "@/components/common-form";
+import ForgotPasswordForm from "@/components/auth/forgot-password";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { signInFormControls, signUpFormControls } from "@/config";
@@ -17,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const {
     signInFormData,
     setSignInFormData,
@@ -113,24 +116,37 @@ function AuthPage() {
           </TabsList>
 
           <TabsContent value="signin">
-            <Card className="p-6 space-y-4 bg-white/80 backdrop-blur-sm shadow-lg">
-              <CardHeader>
-                <CardTitle>Sign in to your account</CardTitle>
-                <CardDescription>
-                  Enter your email and password to access your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <CommonForm
-                  formControls={signInFormControls}
-                  buttonText={"Sign In"}
-                  formData={signInFormData}
-                  setFormData={setSignInFormData}
-                  isButtonDisabled={!checkIfSignInFormIsValid()}
-                  handleSubmit={handleLoginUser}
-                />
-              </CardContent>
-            </Card>
+            {showForgotPassword ? (
+              <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+            ) : (
+              <Card className="p-6 space-y-4 bg-white/80 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle>Sign in to your account</CardTitle>
+                  <CardDescription>
+                    Enter your email and password to access your account
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <CommonForm
+                    formControls={signInFormControls}
+                    buttonText={"Sign In"}
+                    formData={signInFormData}
+                    setFormData={setSignInFormData}
+                    isButtonDisabled={!checkIfSignInFormIsValid()}
+                    handleSubmit={handleLoginUser}
+                  />
+                </CardContent>
+                <CardFooter className="flex justify-end pt-2 pb-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </CardFooter>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="signup">
@@ -146,8 +162,8 @@ function AuthPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Role
                   </label>
-                  <Select 
-                    value={signUpFormData?.userRole || ""} 
+                  <Select
+                    value={signUpFormData?.userRole || ""}
                     onValueChange={handleRoleChange}
                   >
                     <SelectTrigger>
@@ -179,47 +195,47 @@ function AuthPage() {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(120px, 60px) rotate(180deg); }
         }
-        
+
         @keyframes float-2 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-100px, 80px) rotate(-180deg); }
         }
-        
+
         @keyframes float-3 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(90px, -60px) rotate(180deg); }
         }
-        
+
         @keyframes float-4 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-80px, -40px) rotate(-180deg); }
         }
-        
+
         @keyframes float-5 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(70px, 50px) rotate(180deg); }
         }
-        
+
         @keyframes float-6 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-60px, -70px) rotate(-180deg); }
         }
-        
+
         @keyframes float-7 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(50px, -40px) rotate(180deg); }
         }
-        
+
         @keyframes float-8 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-40px, 60px) rotate(-180deg); }
         }
-        
+
         @keyframes float-9 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(60px, -50px) rotate(180deg); }
         }
-        
+
         @keyframes float-10 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-30px, 40px) rotate(-180deg); }
@@ -229,22 +245,22 @@ function AuthPage() {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(110px, -70px) rotate(180deg); }
         }
-        
+
         @keyframes float-12 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-90px, 65px) rotate(-180deg); }
         }
-        
+
         @keyframes float-13 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(75px, -85px) rotate(180deg); }
         }
-        
+
         @keyframes float-14 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-95px, -55px) rotate(-180deg); }
         }
-        
+
         @keyframes float-15 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(85px, 75px) rotate(180deg); }
@@ -254,22 +270,22 @@ function AuthPage() {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-70px, -90px) rotate(-180deg); }
         }
-        
+
         @keyframes float-17 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(65px, -45px) rotate(180deg); }
         }
-        
+
         @keyframes float-18 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-55px, 80px) rotate(-180deg); }
         }
-        
+
         @keyframes float-19 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(100px, -60px) rotate(180deg); }
         }
-        
+
         @keyframes float-20 {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           50% { transform: translate(-85px, 70px) rotate(-180deg); }

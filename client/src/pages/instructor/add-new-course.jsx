@@ -43,41 +43,66 @@ function AddNewCoursePage() {
   }
 
   function validateFormData() {
-    for (const key in courseLandingFormData) {
+    console.log('Validating form data...');
+
+    // Check if curriculum has at least one item
+    if (isEmpty(courseCurriculumFormData)) {
+      console.log('Curriculum is empty');
+      return false;
+    }
+
+    // Check if landing page data is valid
+    const requiredLandingFields = ['title', 'description', 'category', 'pricing', 'image'];
+    for (const key of requiredLandingFields) {
       if (isEmpty(courseLandingFormData[key])) {
+        console.log(`Missing required field: ${key}`);
         return false;
       }
     }
 
-    let hasFreePreview = false;
-
+    // Check if curriculum items are valid
     for (const item of courseCurriculumFormData) {
-      if (
-        isEmpty(item.title) ||
-        isEmpty(item.videoUrl) ||
-        isEmpty(item.public_id)
-      ) {
+      if (isEmpty(item.title)) {
+        console.log('Missing curriculum item title');
         return false;
-      }
-
-      if (item.freePreview) {
-        hasFreePreview = true; //found at least one free preview
       }
     }
 
-    return hasFreePreview;
+    console.log('Form data is valid');
+    return true;
   }
 
   async function handleCreateCourse() {
-    const courseFinalFormData = {
+    console.log('Submit button clicked');
+
+    // Calculate total course duration in seconds
+    const totalDuration = courseCurriculumFormData.reduce((total, lecture) => {
+      return total + (lecture.duration || 0);
+    }, 0);
+
+    // For new courses
+    let courseFinalFormData = {
       instructorId: auth?.user?._id,
       instructorName: auth?.user?.userName,
       date: new Date(),
       ...courseLandingFormData,
-      students: [],
       curriculum: courseCurriculumFormData,
+      totalDuration: totalDuration, // Add total duration in seconds
       isPublised: true,
     };
+
+    // If we're updating an existing course, we need to preserve the students array
+    if (currentEditedCourseId !== null) {
+      console.log('Updating existing course:', currentEditedCourseId);
+
+      // For existing courses, always include the students array
+      // If it's not provided in the form data, we'll set it to an empty array
+      // and let the server handle preserving the existing students
+      courseFinalFormData.students = [];
+    } else {
+      // For new courses, initialize with empty students array
+      courseFinalFormData.students = [];
+    }
 
     const response =
       currentEditedCourseId !== null
@@ -112,8 +137,12 @@ function AddNewCoursePage() {
       }, {});
 
       console.log(setCourseFormData, response?.data, "setCourseFormData");
+      console.log('Existing students:', response?.data?.students);
       setCourseLandingFormData(setCourseFormData);
       setCourseCurriculumFormData(response?.data?.curriculum);
+
+      // Store the students array in a ref or context if needed for later use
+      // This is a backup in case the fetch in handleCreateCourse fails
     }
 
     console.log(response, "response");
@@ -130,41 +159,71 @@ function AddNewCoursePage() {
   console.log(params, currentEditedCourseId, "params");
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between">
-        <h1 className="text-3xl font-extrabold mb-5">Create a new course</h1>
-        <Button
-          disabled={!validateFormData()}
-          className="text-sm tracking-wider font-bold px-8"
-          onClick={handleCreateCourse}
-        >
-          SUBMIT
-        </Button>
-      </div>
-      <Card>
-        <CardContent>
-          <div className="container mx-auto p-4">
-            <Tabs defaultValue="curriculum" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="course-landing-page">
-                  Course Landing Page
-                </TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-              <TabsContent value="curriculum">
-                <CourseCurriculum />
-              </TabsContent>
-              <TabsContent value="course-landing-page">
-                <CourseLanding />
-              </TabsContent>
-              <TabsContent value="settings">
-                <CourseSettings />
-              </TabsContent>
-            </Tabs>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 py-8">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_100px,rgba(120,119,198,0.15),transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_80%_600px,rgba(78,161,255,0.1),transparent)]" />
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-4xl font-extrabold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Create Your Course</h1>
+            <p className="text-gray-300 max-w-2xl">Share your knowledge with the world. Build a comprehensive curriculum that engages and inspires your students.</p>
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-8 py-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
+            onClick={handleCreateCourse}
+          >
+            Publish Course
+          </Button>
+        </div>
+
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl overflow-hidden">
+          <CardContent className="p-0">
+            <Tabs defaultValue="curriculum" className="w-full">
+              <div className="bg-white/10 backdrop-blur-md border-b border-white/10 px-6 py-3">
+                <TabsList className="bg-transparent grid grid-cols-3 gap-4 w-full max-w-2xl mx-auto">
+                  <TabsTrigger
+                    value="curriculum"
+                    className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    Curriculum
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="course-landing-page"
+                    className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    Course Landing Page
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="settings"
+                    className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="p-6">
+                <TabsContent value="curriculum" className="mt-0 animate-in fade-in-50 duration-300">
+                  <CourseCurriculum />
+                </TabsContent>
+                <TabsContent value="course-landing-page" className="mt-0 animate-in fade-in-50 duration-300">
+                  <CourseLanding />
+                </TabsContent>
+                <TabsContent value="settings" className="mt-0 animate-in fade-in-50 duration-300">
+                  <CourseSettings />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-400 text-sm">Need help? Check out our <a href="#" className="text-blue-400 hover:text-blue-300 underline">course creation guide</a> or <a href="#" className="text-blue-400 hover:text-blue-300 underline">contact support</a>.</p>
+        </div>
+      </div>
     </div>
   );
 }

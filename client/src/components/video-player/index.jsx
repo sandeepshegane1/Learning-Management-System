@@ -19,6 +19,7 @@ function VideoPlayer({
   url,
   onProgressUpdate,
   progressData,
+  onDurationChange,
 }) {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
@@ -115,6 +116,15 @@ function VideoPlayer({
     };
   }, []);
 
+  // Handle duration change when video loads
+  const handleDuration = (duration) => {
+    console.log('Video duration detected:', duration, 'seconds');
+    if (onDurationChange && typeof onDurationChange === 'function') {
+      console.log('Calling onDurationChange with duration:', duration);
+      onDurationChange(duration);
+    }
+  };
+
   useEffect(() => {
     if (played === 1) {
       onProgressUpdate({
@@ -127,7 +137,7 @@ function VideoPlayer({
   return (
     <div
       ref={playerContainerRef}
-      className={`relative bg-gray-900 rounded-lg overflow-hidden shadow-2xl transition-all duration-300 ease-in-out 
+      className={`relative bg-gray-900 rounded-lg overflow-hidden shadow-2xl transition-all duration-300 ease-in-out
       ${isFullScreen ? "w-screen h-screen" : ""}
       `}
       style={{ width, height }}
@@ -144,6 +154,7 @@ function VideoPlayer({
         volume={volume}
         muted={muted}
         onProgress={handleProgress}
+        onDuration={handleDuration}
       />
       {showControls && (
         <div

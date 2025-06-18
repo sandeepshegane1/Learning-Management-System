@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { Checkbox } from "../ui/checkbox";
 
 function FormControls({ formControls = [], formData, setFormData }) {
   function renderComponentByType(getControlItem) {
@@ -74,6 +75,29 @@ function FormControls({ formControls = [], formData, setFormData }) {
           />
         );
         break;
+      case "checkbox":
+        element = (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={getControlItem.name}
+              name={getControlItem.name}
+              checked={!!currentControlItemValue}
+              onCheckedChange={(checked) =>
+                setFormData({
+                  ...formData,
+                  [getControlItem.name]: checked,
+                })
+              }
+            />
+            <label
+              htmlFor={getControlItem.name}
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              {getControlItem.checkboxLabel || getControlItem.label}
+            </label>
+          </div>
+        );
+        break;
 
       default:
         element = (
@@ -99,10 +123,12 @@ function FormControls({ formControls = [], formData, setFormData }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {formControls.map((controleItem) => (
-        <div key={controleItem.name}>
-          <Label htmlFor={controleItem.name}>{controleItem.label}</Label>
-          {renderComponentByType(controleItem)}
+      {formControls.map((controlItem) => (
+        <div key={controlItem.name}>
+          {controlItem.componentType !== "checkbox" && (
+            <Label htmlFor={controlItem.name}>{controlItem.label}</Label>
+          )}
+          {renderComponentByType(controlItem)}
         </div>
       ))}
     </div>

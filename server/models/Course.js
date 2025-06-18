@@ -5,6 +5,7 @@ const LectureSchema = new mongoose.Schema({
   videoUrl: String,
   public_id: String,
   freePreview: Boolean,
+  duration: Number, // Duration in seconds
 });
 
 const CourseSchema = new mongoose.Schema({
@@ -20,7 +21,10 @@ const CourseSchema = new mongoose.Schema({
   image: String,
   welcomeMessage: String,
   pricing: Number,
+  discountPercentage: { type: Number, default: 0 },
+  discountActive: { type: Boolean, default: false },
   objectives: String,
+  totalDuration: { type: Number, default: 0 }, // Total duration in seconds
   students: [
     {
       studentId: String,
@@ -30,7 +34,7 @@ const CourseSchema = new mongoose.Schema({
     },
   ],
   curriculum: [LectureSchema],
-  isPublised: Boolean,
+  isPublished: Boolean,
 });
 
 module.exports = mongoose.model("Course", CourseSchema);

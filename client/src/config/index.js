@@ -37,6 +37,12 @@ export const signInFormControls = [
     type: "password",
     componentType: "input",
   },
+  {
+    name: "rememberMe",
+    label: "Remember Me",
+    checkboxLabel: "Remember Me",
+    componentType: "checkbox",
+  },
 ];
 
 export const initialSignInFormData = {
@@ -136,6 +142,19 @@ export const courseLandingPageFormControls = [
     placeholder: "Enter course pricing",
   },
   {
+    name: "discountPercentage",
+    label: "Discount Percentage",
+    componentType: "input",
+    type: "number",
+    placeholder: "Enter discount percentage (0-100)",
+  },
+  {
+    name: "discountActive",
+    label: "Enable Discount",
+    checkboxLabel: "Enable discount for this course",
+    componentType: "checkbox",
+  },
+  {
     name: "objectives",
     label: "Objectives",
     componentType: "textarea",
@@ -158,6 +177,8 @@ export const courseLandingInitialFormData = {
   subtitle: "",
   description: "",
   pricing: "",
+  discountPercentage: 0,
+  discountActive: false,
   objectives: "",
   welcomeMessage: "",
   image: "",
@@ -169,6 +190,7 @@ export const courseCurriculumInitialFormData = [
     videoUrl: "",
     freePreview: false,
     public_id: "",
+    duration: 0, // Duration in seconds
   },
 ];
 
