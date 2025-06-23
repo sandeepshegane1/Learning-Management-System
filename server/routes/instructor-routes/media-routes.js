@@ -7,7 +7,13 @@ const {
 
 const router = express.Router();
 
-const upload = multer({ dest: "uploads/" });
+// Configure multer for serverless environment
+const upload = multer({
+  dest: "/tmp/uploads/",
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  }
+});
 
 router.post("/upload", upload.single("file"), async (req, res) => {
   console.log("req.file..........", req.file);
