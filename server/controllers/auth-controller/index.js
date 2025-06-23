@@ -7,14 +7,36 @@ const jwt = require("jsonwebtoken");
 const registerUser = async (req, res) => {
   const { userName, userEmail, password, role } = req.body;
 
-  const existingUser = await User.findOne({
-    $or: [{ userEmail }, { userName }],
-  });
-
-  if (existingUser) {
+  // Check if email already exists
+  const existingEmail = await User.findOne({ userEmail });
+  if (existingEmail) {
     return res.status(400).json({
       success: false,
-      message: "User name or user email already exists",
+      message: "Email address is already registered",
+    });
+  }
+
+  // Check if username already exists
+  const existingUsername = await User.findOne({ userName });
+  if (existingUsername) {
+    return res.status(400).json({
+      success: false,
+      message: "Username is already taken",
+    });
+  }
+
+  // Password validation
+  const missingRequirements = [];
+  if (password.length < 8) missingRequirements.push("at least 8 characters");
+  if (!/[A-Z]/.test(password)) missingRequirements.push("an uppercase letter");
+  if (!/[a-z]/.test(password)) missingRequirements.push("a lowercase letter");
+  if (!/\d/.test(password)) missingRequirements.push("a number");
+  if (!/[@$!%*?&]/.test(password)) missingRequirements.push("a special character (@$!%*?&)");
+
+  if (missingRequirements.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: `Password is missing: ${missingRequirements.join(", ")}`
     });
   }
 
@@ -24,14 +46,18 @@ const registerUser = async (req, res) => {
     userEmail,
     role,
     password: hashPassword,
-  });
+    });
 
-  await newUser.save();
+    await newUser.save();
 
-  return res.status(201).json({
-    success: true,
-    message: "User registered successfully!",
-  });
+    // Send verification OTP
+    const { sendVerificationOTP } = require('./email-verification-controller');
+    await sendVerificationOTP({ body: { email: userEmail } }, { status: () => ({ json: () => {} }) });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully! Please check your email for verification OTP.",
+    });
 };
 
 const loginUser = async (req, res) => {
@@ -43,6 +69,14 @@ const loginUser = async (req, res) => {
     return res.status(401).json({
       success: false,
       message: "Invalid credentials",
+    });
+  }
+
+  // Check if email is verified
+  if (!checkUser.isEmailVerified) {
+    return res.status(401).json({
+      success: false,
+      message: "Please verify your email address before logging in."
     });
   }
 

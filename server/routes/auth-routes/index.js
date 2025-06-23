@@ -6,6 +6,7 @@ const {
 const { updateUserProfile } = require("../../controllers/auth-controller/profile-controller");
 const { changePassword } = require("../../controllers/auth-controller/security-controller");
 const { forgotPassword, resetPassword } = require("../../controllers/auth-controller/password-controller");
+const { sendVerificationOTP, verifyOTP } = require("../../controllers/auth-controller/email-verification-controller");
 const authenticateMiddleware = require("../../middleware/auth-middleware");
 const router = express.Router();
 
@@ -32,5 +33,9 @@ router.put("/security/change-password/:userId", authenticateMiddleware, changePa
 // Password reset routes
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+// Email verification routes
+router.post("/send-verification-otp", sendVerificationOTP);
+router.post("/verify-otp", verifyOTP);
 
 module.exports = router;

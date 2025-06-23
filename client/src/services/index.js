@@ -7,6 +7,16 @@ export async function registerService(formData) {
   });
   return data;
 }
+
+export async function sendVerificationOTPService(email) {
+  const { data } = await axiosInstance.post("/auth/send-verification-otp", { email });
+  return data;
+}
+
+export async function verifyOTPService(email, otp) {
+  const { data } = await axiosInstance.post("/auth/verify-otp", { email, otp });
+  return data;
+}
 export async function loginService(formData) {
   const { data } = await axiosInstance.post("/auth/login", formData);
 

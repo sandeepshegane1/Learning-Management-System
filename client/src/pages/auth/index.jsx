@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import CommonForm from "@/components/common-form";
 import ForgotPasswordForm from "@/components/auth/forgot-password";
+import OTPVerification from "@/components/auth/otp-verification";
 import {
   Card,
   CardContent,
@@ -43,11 +44,12 @@ function AuthPage() {
   // Modified handleRegisterUser to switch tabs after successful registration
   async function handleSignUp(event) {
     try {
-      await handleRegisterUser(event);
-      // Switch to signin tab after successful registration
-      setActiveTab("signin");
+      const success = await handleRegisterUser(event);
+      if (success) {
+        // Only switch to signin tab if registration was successful
+        setActiveTab("signin");
+      }
     } catch (error) {
-      // Optionally handle registration error
       console.error("Registration failed", error);
     }
   }
@@ -72,6 +74,7 @@ function AuthPage() {
 
   return (
     <div className="relative flex flex-col min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 overflow-hidden">
+      <OTPVerification />
       <div className="absolute inset-0 overflow-hidden">
         {/* Each bubble has a unique color and size */}
         <div className="absolute top-10 left-10 w-64 h-64 bg-blue-400 rounded-full opacity-20 animate-float-1"></div>

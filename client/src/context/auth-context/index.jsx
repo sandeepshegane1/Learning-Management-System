@@ -1,16 +1,32 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { initialSignInFormData, initialSignUpFormData } from "@/config";
-import { checkAuthService, loginService, registerService, forgotPasswordService, resetPasswordService } from "@/services";
+import { 
+  checkAuthService, 
+  loginService, 
+  registerService, 
+  forgotPasswordService, 
+  resetPasswordService,
+  verifyOTPService,
+  sendVerificationOTPService 
+} from "@/services";
 import { createContext, useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
+  const { toast } = useToast();
   const [signInFormData, setSignInFormData] = useState({
     ...initialSignInFormData,
     rememberMe: false
   });
   const [signUpFormData, setSignUpFormData] = useState(initialSignUpFormData);
+  const [otpVerification, setOtpVerification] = useState({
+    show: false,
+    email: "",
+    otp: "",
+    loading: false
+  });
   const [auth, setAuth] = useState({
     authenticate: false,
     user: null,
@@ -25,8 +41,84 @@ export default function AuthProvider({ children }) {
 
   async function handleRegisterUser(event) {
     event.preventDefault();
-    const data = await registerService(signUpFormData);
-    console.log(data, "datadatadatadatadata");
+    try {
+      const data = await registerService(signUpFormData);
+      if (data.success) {
+        setOtpVerification(prev => ({
+          ...prev,
+          show: true,
+          email: signUpFormData.userEmail
+        }));
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+        return true;
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+      return false;
+    }
+  }
+
+  async function handleVerifyOTP() {
+    try {
+      setOtpVerification(prev => ({ ...prev, loading: true }));
+      console.log('Verifying OTP:', { email: otpVerification.email, otp: otpVerification.otp });
+      const data = await verifyOTPService(otpVerification.email, otpVerification.otp);
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Email verified successfully! Please sign in.",
+        });
+        setOtpVerification({
+          show: false,
+          email: "",
+          otp: "",
+          loading: false
+        });
+        return true;
+      }
+    } catch (error) {
+      console.error('OTP Verification Error:', error);
+      const errorMessage = error.response?.data?.message || "OTP verification failed. Please try again.";
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+      return false;
+    } finally {
+      setOtpVerification(prev => ({ ...prev, loading: false }));
+    }
+  }
+
+  async function handleResendOTP() {
+    try {
+      console.log('Resending OTP to:', otpVerification.email);
+      const data = await sendVerificationOTPService(otpVerification.email);
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "OTP sent successfully!",
+        });
+        return true;
+      }
+    } catch (error) {
+      console.error('Resend OTP Error:', error);
+      const errorMessage = error.response?.data?.message || "Failed to send OTP. Please try again.";
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+      return false;
+    }
   }
 
   async function handleLoginUser(event) {
@@ -137,21 +229,25 @@ export default function AuthProvider({ children }) {
   return (
     <AuthContext.Provider
       value={{
-        signInFormData,
-        setSignInFormData,
-        signUpFormData,
-        setSignUpFormData,
-        handleRegisterUser,
-        handleLoginUser,
-        auth,
-        resetCredentials,
-        checkAuthUser,
-        forgotPasswordEmail,
-        setForgotPasswordEmail,
-        handleForgotPassword,
-        handleResetPassword,
-        resetPasswordStatus
-      }}
+          signInFormData,
+          setSignInFormData,
+          signUpFormData,
+          setSignUpFormData,
+          auth,
+          setAuth,
+          loading,
+          handleRegisterUser,
+          handleLoginUser,
+          handleForgotPassword,
+          handleResetPassword,
+          forgotPasswordEmail,
+          setForgotPasswordEmail,
+          resetPasswordStatus,
+          otpVerification,
+          setOtpVerification,
+          handleVerifyOTP,
+          handleResendOTP,
+        }}
     >
       {loading ? <Skeleton /> : children}
     </AuthContext.Provider>
