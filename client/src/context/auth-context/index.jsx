@@ -124,7 +124,7 @@ export default function AuthProvider({ children }) {
   async function handleLoginUser(event) {
     event.preventDefault();
     const data = await loginService(signInFormData);
-    console.log(data, "datadatadatadatadata");
+    console.log(data, "datadatadatadatadataaaaaaaa");
 
     if (data.success) {
       // Store token in localStorage if rememberMe is checked, otherwise in sessionStorage
