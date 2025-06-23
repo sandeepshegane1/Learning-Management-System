@@ -2,18 +2,34 @@
   "name": "skillhub-lms",
   "version": "1.0.0",
   "description": "SkillHub Learning Management System",
+  "main": "server.js",
   "scripts": {
-    "build": "cd client && npm run build",
-    "start": "node api/index.js",
+    "build": "npm run install-all && cd client && npm run build",
+    "start": "node server.js",
     "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
-    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+    "install-all": "cd client && npm install && cd ../server && npm install",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "canvas": "^3.1.0",
+    "cloudinary": "^2.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "html-pdf": "^3.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "paypal-rest-sdk": "^1.8.1",
     "pdfkit": "^0.17.0",
+    "razorpay": "^2.9.6",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.6"
   },
   "engines": {
     "node": ">=18.0.0"

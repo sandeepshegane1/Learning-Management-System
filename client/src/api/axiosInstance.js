@@ -1,7 +1,17 @@
 import axios from "axios";
 
+// Use relative URL in production, localhost in development
+const getBaseURL = () => {
+  if (import.meta.env.PROD) {
+    // In production, use relative URL since frontend and backend are served from same domain
+    return "/api";
+  }
+  // In development, use the full localhost URL
+  return import.meta.env.VITE_API_URL || "http://localhost:3000";
+};
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  baseURL: getBaseURL(),
 });
 
 axiosInstance.interceptors.request.use(
